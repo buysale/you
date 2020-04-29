@@ -1,0 +1,99 @@
+
+var UPostMapMeta = function(t){
+	
+	var post_id = /upmm-(\d+)/.exec(t.id)[1];
+	var $ = jQuery, map, data, markers_array=[], infowin_zindex=0;
+		
+	var init = function(){
+		var post_data = { 
+			action: 'upmm-ajax', 
+			action_type: 'get_saved_data',
+			_ajax_nonce: upmm_settings.nonce,
+			post_id: post_id
+		}
+		$.post(upmm_settings.ajax_url, post_data, function(_data){
+			if( ! _data ) return;
+			data = _data;
+			var map_opts = {
+				zoom: data.map.zoom,
+				center: new google.maps.LatLng(data.map.lat, data.map.lng),
+				mapTypeId: data.map.map_type,
+				disableDefaultUI: true,
+				navigationControl: true,
+				navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+				minZoom: 1
+			};
+			map = new google.maps.Map( t, map_opts );
+			for(var i in data.markers){
+				add_marker( Number(i)+1, data.markers[i] );
+			}
+			draw_path();
+		}, 'json');
+	}
+	
+	var add_marker = function(no, d){
+		var marker_opts = {
+			map: map, 
+			position: new google.maps.LatLng(d.lat, d.lng)
+		}
+		if( data.markers.length>1 ) 
+			marker_opts.icon = 'https://chart.googleapis.com/chart?chst=d_map_pin_letter&chld='+no+'|ff776b|000000';
+		
+		if(! d.info) 
+			marker_opts.clickable = false;
+		
+		var marker = new google.maps.Marker(marker_opts);
+		markers_array.push(marker);
+			
+		if(d.info){
+			var infowin = new google.maps.InfoWindow({
+				content: d.info,
+				maxWidth: 300
+		    }); 
+			google.maps.event.addListener(marker, 'click', function(e){
+				infowin.setZIndex(++infowin_zindex);
+				infowin.open(map, marker);
+			});
+			if( d.auto=='1' ) 
+				google.maps.event.trigger(marker, 'click');
+		}
+	}
+	
+	var draw_path = function(){
+		if( !map || markers_array.length<2 || data.path.showpath!='1' ) return;
+		var path, coords = [];
+		for(var i in markers_array){
+			var pos = markers_array[i].getPosition();
+			coords.push(pos);
+		}
+		if( data.path.autoclose=='1' && markers_array.length>2 ){
+			path = new google.maps.Polygon({
+				paths: coords,
+				strokeColor: data.path.strokecolor,
+				strokeWeight: parseInt(data.path.strokesize),
+				strokeOpacity: parseFloat(data.path.strokeopacity),
+				fillColor: data.path.fillcolor,
+				fillOpacity: parseFloat(data.path.fillopacity),
+				clickable: false
+			});
+		}else{
+			path = new google.maps.Polyline({
+				path: coords,
+				strokeColor: data.path.strokecolor,
+				strokeWeight: parseInt(data.path.strokesize),
+				strokeOpacity: parseFloat(data.path.strokeopacity),
+				clickable: false
+			});
+		}
+		path.setMap(map);
+	}
+	
+	init();
+}
+
+
+jQuery(function(){ 
+	jQuery('.upmm').each(function(){
+		new UPostMapMeta(this);
+	});
+});

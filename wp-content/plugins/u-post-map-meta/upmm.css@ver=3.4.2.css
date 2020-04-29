@@ -1,0 +1,19 @@
+.upmm {
+	margin-bottom: 20px;
+}
+.upmm img {
+	max-width: none !important;
+	max-height: none !important;
+}
+.upmm.alignleft {
+	float: left;
+	margin-right: 20px;
+}
+.upmm.alignright {
+	float: right;
+	margin-left: 20px;
+}
+.upmm.aligncenter {
+	margin-left: auto;
+	margin-right: auto;
+}
